@@ -1,0 +1,66 @@
+<x-app-layout>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark">Cetak Laporan Toko</h3>
+            <p class="text-muted mb-0">Pilih jenis laporan yang ingin Anda unduh dalam format PDF.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-primary text-white fw-bold rounded-top-4 py-3">
+                    <i class="bi bi-box-seam me-2"></i> Laporan Master Data
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{{ route('laporan.cetak', 'produk-semua') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 1. Laporan Data Produk</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'produk-menipis') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 2. Laporan Stok Menipis</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'jasa') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 3. Laporan Data Jasa Servis</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'chatbot') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 4. Laporan Aturan Chatbot AI</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-success text-white fw-bold rounded-top-4 py-3">
+                    <i class="bi bi-cash-coin me-2"></i> Laporan Penjualan
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{{ route('laporan.cetak', 'transaksi-semua') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 5. Laporan Seluruh Transaksi</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'transaksi-lunas') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 6. Laporan Transaksi Lunas</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'transaksi-pending') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 7. Laporan Transaksi Pending</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{{ route('laporan.cetak', 'pendapatan') }}" target="_blank" class="btn btn-outline-dark text-start p-3 rounded-3 d-flex justify-content-between align-items-center border-primary bg-primary bg-opacity-10 fw-bold">
+                            <span><i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i> 8. Laporan Pendapatan Keseluruhan</span>
+                            <i class="bi bi-printer"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
