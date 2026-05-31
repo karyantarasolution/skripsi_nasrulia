@@ -101,6 +101,9 @@
                                     <button type="button" class="btn btn-sm btn-outline-success rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#modalDetail{{ $t->id }}">
                                         <i class="bi bi-receipt"></i> Cek Nota
                                     </button>
+                                    <a href="{{ route('transaksi.invoice', $t->id) }}" target="_blank" class="btn btn-sm btn-outline-danger rounded-3 px-3">
+                                        <i class="bi bi-file-pdf"></i> PDF
+                                    </a>
                                 </td>
                             </tr>
                             @empty
@@ -177,6 +180,9 @@
                     @endif
                 </div>
                 <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <a href="{{ route('transaksi.invoice', $t->id) }}" target="_blank" class="btn btn-danger rounded-pill px-4 me-2">
+                        <i class="bi bi-file-pdf me-1"></i> Cetak Invoice PDF
+                    </a>
                     <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>

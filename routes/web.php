@@ -14,34 +14,36 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+
     // Dashboard Utama
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // 1. AKSES KHUSUS ADMIN (Master Data & Aturan AI)
+    // 1. AKSES KHUSUS ADMIN (Master Data & Laporan)
     Route::middleware(['peran:admin'])->group(function () {
         Route::resource('kategori', KategoriController::class);
         Route::resource('produk', ProdukController::class);
         Route::resource('jasa', JasaServisController::class);
         Route::resource('aturan-chatbot', AturanChatbotController::class);
-        Route::get('/laporan', [App\Http\Controllers\LaporanController::class, 'index'])->name('laporan.index');
-        Route::get('/laporan/cetak/{tipe}', [App\Http\Controllers\LaporanController::class, 'cetakPDF'])->name('laporan.cetak');
-        
-        Route::get('/pengguna', function () { return view('pengguna.index'); })->name('pengguna.index');
-        Route::get('/laporan', function () { return view('laporan.index'); })->name('laporan.index');
+
+        // Laporan PDF
+        Route::prefix('laporan')->name('laporan.')->group(function () {
+            Route::get('/', [App\Http\Controllers\LaporanController::class, 'index'])->name('index');
+            Route::get('/cetak/{tipe}', [App\Http\Controllers\LaporanController::class, 'cetakPDF'])->name('cetak');
+        });
     });
 
-    // 2. AKSES ADMIN & KASIR (Kelola Transaksi)
-   Route::middleware(['peran:admin,kasir'])->group(function () {
+    // 2. AKSES ADMIN & KASIR (Kelola Transaksi & Invoice)
+    Route::middleware(['peran:admin,kasir'])->group(function () {
         Route::get('/transaksi', [App\Http\Controllers\TransaksiController::class, 'index'])->name('transaksi.index');
         Route::post('/transaksi/konfirmasi/{id}', [App\Http\Controllers\TransaksiController::class, 'konfirmasi'])->name('transaksi.konfirmasi');
+        Route::get('/transaksi/invoice/{id}', [App\Http\Controllers\TransaksiController::class, 'invoice'])->name('transaksi.invoice');
     });
 
-    // 3. AKSES SEMUA ROLE (Biar Admin bisa ngetes Chatbot & Katalog Pelanggan)
+    // 3. AKSES SEMUA ROLE
     Route::middleware(['peran:admin,kasir,pelanggan'])->group(function () {
-        
+
         // Fitur Chatbot
         Route::get('/konsultasi', function () { return view('chatbot.index'); })->name('konsultasi');
         Route::post('/api/chat', [ChatbotController::class, 'getResponse'])->name('api.chat');
@@ -53,7 +55,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/keranjang/hapus/{id}', [KatalogController::class, 'hapusItem'])->name('keranjang.hapus');
         Route::post('/checkout', [KatalogController::class, 'checkout'])->name('checkout');
         Route::get('/pesanan-saya', [App\Http\Controllers\TransaksiController::class, 'pesananSaya'])->name('pesanan.saya');
-        
+
+        // Invoice untuk pelanggan
+        Route::get('/pesanan-saya/invoice/{id}', [App\Http\Controllers\TransaksiController::class, 'invoice'])->name('pesanan.invoice');
     });
 
     // Profile
@@ -61,5 +65,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-Route::post('/api/chat', [ChatbotController::class, 'getResponse'])->name('api.chat');
-require __DIR__.'/auth.php';
+
+require __DIR__ . '/auth.php';

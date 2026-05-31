@@ -14,10 +14,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th width="20%">Kode Transaksi</th>
-                        <th width="20%">Tanggal</th>
-                        <th width="20%">Total Belanja</th>
-                        <th width="25%" class="text-center">Status</th>
+                        <th width="18%">Kode Transaksi</th>
+                        <th width="15%">Tanggal</th>
+                        <th width="15%">Total Belanja</th>
+                        <th width="22%" class="text-center">Status</th>
                         <th width="15%" class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -38,6 +38,11 @@
                             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalDetail{{ $p->id }}">
                                 <i class="bi bi-eye me-1"></i> Detail
                             </button>
+                            @if($p->status == 'Lunas')
+                            <a href="{{ route('pesanan.invoice', $p->id) }}" target="_blank" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-file-pdf"></i> Invoice
+                            </a>
+                            @endif
                         </td>
                     </tr>
                     @empty
@@ -101,6 +106,9 @@
                     @endif
                 </div>
                 <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                    <a href="{{ route('pesanan.invoice', $p->id) }}" target="_blank" class="btn btn-danger rounded-pill px-4 me-2">
+                        <i class="bi bi-file-pdf me-1"></i> Cetak Invoice PDF
+                    </a>
                     <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>

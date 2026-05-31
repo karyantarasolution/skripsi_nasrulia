@@ -1,4 +1,14 @@
 <x-app-layout>
+    @php
+        $total_produk = \App\Models\Produk::count();
+        $penjualan_hari_ini = \App\Models\Transaksi::whereDate('created_at', \Carbon\Carbon::today())->count();
+        $servis_berjalan = \App\Models\ServisDetail::where('status', 'proses')->count();
+        $pendapatan_bulan_ini = \App\Models\Transaksi::where('status', 'Lunas')
+            ->whereMonth('updated_at', \Carbon\Carbon::now()->month)
+            ->whereYear('updated_at', \Carbon\Carbon::now()->year)
+            ->sum('total_bayar');
+    @endphp
+
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
@@ -15,7 +25,6 @@
 
     @if(Auth::user()->peran == 'admin' || Auth::user()->peran == 'kasir')
     <div class="row g-4 mb-4">
-        
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                 <div class="card-body p-4">
@@ -25,7 +34,7 @@
                             <i class="bi bi-box-seam fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="fw-bold mb-0 text-dark">124</h2>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $total_produk }}</h2>
                     <small class="text-success fw-semibold"><i class="bi bi-arrow-up-short"></i> Tersedia di gudang</small>
                 </div>
             </div>
@@ -40,7 +49,7 @@
                             <i class="bi bi-cart-check fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="fw-bold mb-0 text-dark">12</h2>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $penjualan_hari_ini }}</h2>
                     <small class="text-success fw-semibold"><i class="bi bi-arrow-up-short"></i> Transaksi sukses</small>
                 </div>
             </div>
@@ -55,7 +64,7 @@
                             <i class="bi bi-tools fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="fw-bold mb-0 text-dark">5</h2>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $servis_berjalan }}</h2>
                     <small class="text-muted fw-semibold">Sedang dikerjakan</small>
                 </div>
             </div>
@@ -70,12 +79,11 @@
                             <i class="bi bi-wallet2 fs-5"></i>
                         </div>
                     </div>
-                    <h3 class="fw-bold mb-0 text-dark">Rp 4.5M</h3>
-                    <small class="text-muted fw-semibold">Estimasi kotor</small>
+                    <h3 class="fw-bold mb-0 text-dark">Rp {{ number_format($pendapatan_bulan_ini, 0, ',', '.') }}</h3>
+                    <small class="text-muted fw-semibold">Transaksi Lunas</small>
                 </div>
             </div>
         </div>
-
     </div>
     @endif
 </x-app-layout>

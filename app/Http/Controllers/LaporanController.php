@@ -7,6 +7,8 @@ use App\Models\Produk;
 use App\Models\JasaServis;
 use App\Models\AturanChatbot;
 use App\Models\Transaksi;
+use App\Models\ServisDetail;
+use App\Models\ChatbotLog;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -22,8 +24,6 @@ class LaporanController extends Controller
         $data = [];
         $judul = '';
         $view = 'laporan.pdf';
-
-        // Set Waktu WITA (Banjarmasin)
         $waktu_cetak = Carbon::now('Asia/Makassar')->format('d M Y H:i');
 
         switch ($tipe) {
@@ -59,17 +59,123 @@ class LaporanController extends Controller
                 $data = Transaksi::where('status', 'Lunas')->latest()->get();
                 $judul = 'Laporan Rekap Pendapatan Keseluruhan';
                 break;
+            case 'margin':
+                return $this->cetakMargin();
+            case 'servis-ringkasan':
+                return $this->cetakServisRingkasan();
+            case 'keuangan':
+                return $this->cetakKeuangan();
+            case 'chatbot-analitik':
+                return $this->cetakChatbotAnalitik();
             default:
                 abort(404);
         }
 
-        // Generate PDF
         $pdf = Pdf::loadView($view, compact('data', 'judul', 'tipe', 'waktu_cetak'));
-        
-        // Ubah ukuran kertas ke A4 (Landscape/Portrait sesuai kebutuhan)
         $pdf->setPaper('A4', 'portrait');
 
-        // Langsung tampilkan di browser (Stream) atau download langsung (Download)
-        return $pdf->stream('Laporan_'.$tipe.'_'.time().'.pdf');
+        return $pdf->stream('Laporan_' . $tipe . '_' . time() . '.pdf');
+    }
+
+    public function cetakMargin()
+    {
+        $produk = Produk::with('kategori')->get();
+        $judul = 'Laporan Margin Keuntungan Produk';
+        $waktu_cetak = Carbon::now('Asia/Makassar')->format('d M Y H:i');
+
+        $total_harga_beli = $produk->sum(fn($p) => $p->harga_beli * $p->stok);
+        $total_harga_jual = $produk->sum(fn($p) => $p->harga_jual * $p->stok);
+        $total_margin = $total_harga_jual - $total_harga_beli;
+        $persen_margin = $total_harga_beli > 0 ? round(($total_margin / $total_harga_beli) * 100, 2) : 0;
+
+        $pdf = Pdf::loadView('laporan.pdf-margin', compact('produk', 'judul', 'waktu_cetak', 'total_harga_beli', 'total_harga_jual', 'total_margin', 'persen_margin'));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->stream('Laporan_Margin_Keuntungan_' . time() . '.pdf');
+    }
+
+    public function cetakServisRingkasan()
+    {
+        $judul = 'Laporan Ringkasan Servis';
+        $waktu_cetak = Carbon::now('Asia/Makassar')->format('d M Y H:i');
+
+        $servis = ServisDetail::with('transaksi', 'jasaServis')->latest()->get();
+
+        $status_count = $servis->groupBy('status')->map->count();
+        $kerusakan_terbanyak = $servis->groupBy('keluhan')->map->count()->sortDesc()->take(10);
+
+        $total_unit = $servis->count();
+        $selesai = $status_count->get('selesai', 0);
+        $proses = $status_count->get('proses', 0);
+        $diambil = $status_count->get('diambil', 0);
+        $garansi = $status_count->get('garansi', 0);
+        $batal = $status_count->get('batal', 0);
+
+        $pdf = Pdf::loadView('laporan.pdf-servis', compact(
+            'judul', 'waktu_cetak', 'servis', 'status_count',
+            'total_unit', 'selesai', 'proses', 'diambil', 'garansi', 'batal',
+            'kerusakan_terbanyak'
+        ));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->stream('Laporan_Ringkasan_Servis_' . time() . '.pdf');
+    }
+
+    public function cetakKeuangan()
+    {
+        $judul = 'Laporan Keuangan Ringkas';
+        $waktu_cetak = Carbon::now('Asia/Makassar')->format('d M Y H:i');
+
+        $transaksi_lunas = Transaksi::with('detail.produk', 'servisDetail.jasaServis')->where('status', 'Lunas')->get();
+
+        $penjualan = $transaksi_lunas->where('tipe', 'penjualan');
+        $servis = $transaksi_lunas->where('tipe', 'servis');
+
+        $total_penjualan = $penjualan->sum('total_bayar');
+        $total_servis = $servis->sum('total_bayar');
+        $total_keseluruhan = $transaksi_lunas->sum('total_bayar');
+        $jumlah_transaksi_penjualan = $penjualan->count();
+        $jumlah_transaksi_servis = $servis->count();
+
+        // Hitung HPP (Harga Pokok Penjualan) dari detail produk
+        $total_hpp = 0;
+        foreach ($penjualan as $t) {
+            foreach ($t->detail as $d) {
+                if ($d->produk) {
+                    $total_hpp += $d->produk->harga_beli * $d->jumlah;
+                }
+            }
+        }
+
+        $laba_kotor = $total_penjualan - $total_hpp;
+
+        $pdf = Pdf::loadView('laporan.pdf-keuangan', compact(
+            'judul', 'waktu_cetak',
+            'total_penjualan', 'total_servis', 'total_keseluruhan',
+            'jumlah_transaksi_penjualan', 'jumlah_transaksi_servis',
+            'total_hpp', 'laba_kotor'
+        ));
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream('Laporan_Keuangan_Ringkas_' . time() . '.pdf');
+    }
+
+    public function cetakChatbotAnalitik()
+    {
+        $judul = 'Laporan Analitik Chatbot AI';
+        $waktu_cetak = Carbon::now('Asia/Makassar')->format('d M Y H:i');
+
+        $logs = ChatbotLog::with('user')->latest()->get();
+        $total_percakapan = $logs->count();
+        $total_user_aktif = $logs->groupBy('user_id')->count();
+
+        $kategori_pertanyaan = $logs->whereNotNull('kategori')->groupBy('kategori')->map->count()->sortDesc();
+
+        $percakapan_per_hari = $logs->groupBy(fn($l) => $l->created_at->format('Y-m-d'))->map->count()->sortDesc();
+
+        $pdf = Pdf::loadView('laporan.pdf-chatbot-analitik', compact(
+            'judul', 'waktu_cetak', 'logs',
+            'total_percakapan', 'total_user_aktif',
+            'kategori_pertanyaan', 'percakapan_per_hari'
+        ));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->stream('Laporan_Chatbot_Analitik_' . time() . '.pdf');
     }
 }

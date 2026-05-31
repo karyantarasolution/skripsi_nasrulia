@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaksi extends Model
 {
@@ -11,19 +13,42 @@ class Transaksi extends Model
 
     protected $table = 'transaksi';
 
-    // Beri izin mass-assignment
     protected $fillable = [
-        'kode_transaksi', 
-        'user_id', 
-        'nama_pelanggan', 
-        'tipe', 
-        'total_bayar', 
-        'status'
+        'kode_transaksi',
+        'user_id',
+        'nama_pelanggan',
+        'tipe',
+        'total_bayar',
+        'status',
     ];
 
-    // Relasi ke Detail Transaksi (1 Transaksi punya banyak Detail)
-    public function detail()
+    public function detail(): HasMany
     {
         return $this->hasMany(TransaksiDetail::class, 'transaksi_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function servisDetail(): HasMany
+    {
+        return $this->hasMany(ServisDetail::class, 'transaksi_id');
+    }
+
+    public function scopeLunas($query)
+    {
+        return $query->where('status', 'Lunas');
+    }
+
+    public function scopePenjualan($query)
+    {
+        return $query->where('tipe', 'penjualan');
+    }
+
+    public function scopeServis($query)
+    {
+        return $query->where('tipe', 'servis');
     }
 }
