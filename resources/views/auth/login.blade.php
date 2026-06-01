@@ -8,7 +8,7 @@
                 <div class="card-body p-5">
                     
                     <div class="text-center mb-4">
-                        <img src="https://via.placeholder.com/100x100?text=LOGO+NJK" alt="Logo NJK" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 90px; height: 90px; object-fit: cover;">
+                        <img src="{{ asset('images/logo-square.svg') }}" alt="Logo NJK" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 90px; height: 90px; object-fit: cover;">
                         <h4 class="fw-bold text-primary mb-1">Login Sistem</h4>
                         <p class="text-muted small">Nusantara Jaya Komputer</p>
                     </div>

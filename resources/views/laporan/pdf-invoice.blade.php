@@ -139,9 +139,14 @@
             <div class="ttd-kosong"></div>
             <p class="fw-bold">( {{ $kasir->name }} )</p>
             <div class="stempel">
-                @php $stempelPath = public_path('storage/stempel.png'); @endphp
-                @if(file_exists($stempelPath))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents($stempelPath)) }}" alt="Stempel Toko" class="stempel-img">
+                @php 
+                    $stempelSvg = public_path('images/stempel.svg');
+                    $stempelPng = public_path('storage/stempel.png');
+                @endphp
+                @if(file_exists($stempelSvg))
+                    <img src="data:image/svg+xml;base64,{{ base64_encode(file_get_contents($stempelSvg)) }}" alt="Stempel Toko" class="stempel-img">
+                @elseif(file_exists($stempelPng))
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents($stempelPng)) }}" alt="Stempel Toko" class="stempel-img">
                 @else
                     <div style="width:100px;height:80px;border:2px dashed #999;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#999;">[STAMPEL]</div>
                 @endif

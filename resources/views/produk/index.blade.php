@@ -35,7 +35,7 @@
                         <tr>
                             <td class="text-center">
                                 @if($p->foto)
-                                   <img src="/storage/{{ $p->foto }}" class="rounded-3 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;" alt="{{ $p->nama_produk }}">
+                                   <img src="{{ asset('storage/' . $p->foto) }}" class="rounded-3 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;" alt="{{ $p->nama_produk }}">
                                 @else
                                     <div class="bg-light rounded-3 d-flex align-items-center justify-content-center mx-auto text-muted shadow-sm" style="width: 50px; height: 50px;">
                                         <i class="bi bi-image"></i>

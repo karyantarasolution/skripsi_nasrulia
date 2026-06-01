@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="icon" href="{{ asset('favicon.svg') }}">
 
     <title>Nusantara Jaya Komputer</title>
 

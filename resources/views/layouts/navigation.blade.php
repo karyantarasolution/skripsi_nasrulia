@@ -1,6 +1,6 @@
 <nav id="sidebar">
     <div class="sidebar-header">
-        <img src="https://via.placeholder.com/200x60/1a1a27/ffffff?text=LOGO+NJK" alt="Logo NJK" class="img-fluid mb-2" id="sidebarLogo" style="max-height: 55px; object-fit: contain;">
+        <img src="{{ asset('images/logo.svg') }}" alt="Logo NJK" class="img-fluid mb-2" id="sidebarLogo" style="max-height: 55px; object-fit: contain;">
     </div>
 
     <ul class="list-unstyled components">
