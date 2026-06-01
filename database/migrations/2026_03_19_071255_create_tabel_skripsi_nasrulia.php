@@ -40,6 +40,7 @@ return new class extends Migration
             $table->string('nama_pelanggan')->nullable();
             $table->enum('tipe', ['penjualan', 'servis']);
             $table->decimal('total_bayar', 15, 2);
+            $table->string('status')->nullable();
             $table->timestamps();
         });
 
