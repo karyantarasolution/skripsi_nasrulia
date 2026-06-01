@@ -12,7 +12,11 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
   public function run(): void
+  
 {
+    $this->call([
+        AturanChatbotSeeder::class,
+    ]);
     \App\Models\User::create([
         'name' => 'Admin NJK',
         'email' => 'admin@gmail.com',
