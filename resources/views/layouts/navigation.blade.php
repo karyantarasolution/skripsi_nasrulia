@@ -27,6 +27,11 @@
                     <i class="bi bi-tools"></i> Jasa Servis
                 </a>
             </li>
+            <li>
+                <a href="{{ route('ekspedisi.index') }}" class="{{ request()->is('ekspedisi*') ? 'active' : '' }}">
+                    <i class="bi bi-truck"></i> Ekspedisi
+                </a>
+            </li>
             <li class="px-4 mt-4 mb-2 text-uppercase fw-bold" style="font-size: 0.7rem; color: #565674; letter-spacing: 1px;">Laporan Toko</li>
             <li>
                 <a href="{{ route('laporan.index') }}" class="{{ request()->is('laporan*') ? 'active' : '' }}">
@@ -40,6 +45,15 @@
             <li>
                 <a href="{{ route('transaksi.index') }}" class="{{ request()->is('transaksi*') ? 'active' : '' }}">
                     <i class="bi bi-cart-check-fill"></i> Kasir & Transaksi
+                </a>
+            </li>
+        @endif
+
+        @if(Auth::user()->peran == 'teknisi')
+            <li class="px-4 mt-4 mb-2 text-uppercase fw-bold" style="font-size: 0.7rem; color: #565674; letter-spacing: 1px;">Layanan Teknisi</li>
+            <li>
+                <a href="{{ route('teknisi.servis') }}" class="{{ request()->is('teknisi/servis') || request()->is('teknisi/semua-servis') ? 'active' : '' }}">
+                    <i class="bi bi-tools"></i> Kelola Servis
                 </a>
             </li>
         @endif

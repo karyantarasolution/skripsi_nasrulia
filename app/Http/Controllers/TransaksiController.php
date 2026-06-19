@@ -20,7 +20,7 @@ class TransaksiController extends Controller
 
     public function index()
     {
-        $transaksi = Transaksi::with('detail.produk')->latest()->get();
+        $transaksi = Transaksi::with('detail.produk', 'ekspedisi')->latest()->get();
         return view('transaksi.index', compact('transaksi'));
     }
 
@@ -55,7 +55,7 @@ class TransaksiController extends Controller
 
     public function pesananSaya()
     {
-        $pesanan = Transaksi::with('detail.produk', 'servisDetail.jasaServis')
+        $pesanan = Transaksi::with('detail.produk', 'servisDetail.jasaServis', 'ekspedisi')
             ->where('user_id', Auth::id())
             ->latest()
             ->get();
@@ -65,7 +65,7 @@ class TransaksiController extends Controller
 
     public function invoice($id)
     {
-        $transaksi = Transaksi::with('detail.produk', 'servisDetail.jasaServis', 'user')->findOrFail($id);
+        $transaksi = Transaksi::with('detail.produk', 'servisDetail.jasaServis', 'user', 'ekspedisi')->findOrFail($id);
         $kasir = Auth::user();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('laporan.pdf-invoice', compact('transaksi', 'kasir'));

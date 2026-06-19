@@ -20,6 +20,12 @@ class Transaksi extends Model
         'tipe',
         'total_bayar',
         'status',
+        'metode_pengambilan',
+        'ekspedisi_id',
+        'jarak_km',
+        'ongkir',
+        'alamat_pengiriman',
+        'bukti_bayar',
     ];
 
     public function detail(): HasMany
@@ -50,5 +56,10 @@ class Transaksi extends Model
     public function scopeServis($query)
     {
         return $query->where('tipe', 'servis');
+    }
+
+    public function ekspedisi()
+    {
+        return $this->belongsTo(Ekspedisi::class);
     }
 }

@@ -65,6 +65,26 @@
             <td><strong>Status</strong></td>
             <td>: {{ strtoupper($transaksi->status) }}</td>
         </tr>
+        @if($transaksi->metode_pengambilan)
+        <tr>
+            <td><strong>Pengambilan</strong></td>
+            <td>: {{ $transaksi->metode_pengambilan == 'diantar' ? 'DIKIRIM' : 'AMBIL DI TOKO' }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        @endif
+        @if($transaksi->metode_pengambilan == 'diantar')
+        <tr>
+            <td><strong>Ekspedisi</strong></td>
+            <td>: {{ $transaksi->ekspedisi->nama_ekspedisi ?? '-' }} ({{ $transaksi->jarak_km ?? '-' }} km)</td>
+            <td><strong>Ongkir</strong></td>
+            <td>: Rp {{ number_format($transaksi->ongkir, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td><strong>Alamat Kirim</strong></td>
+            <td colspan="3">: {{ $transaksi->alamat_pengiriman }}</td>
+        </tr>
+        @endif
     </table>
 
     @if($transaksi->tipe == 'penjualan')
@@ -118,6 +138,16 @@
     @endif
 
     <table class="total-box">
+        <tr>
+            <td width="75%" class="text-right fw-bold">SUBTOTAL :</td>
+            <td width="25%" class="text-right fw-bold">Rp {{ number_format($transaksi->total_bayar - $transaksi->ongkir, 0, ',', '.') }}</td>
+        </tr>
+        @if($transaksi->ongkir > 0)
+        <tr>
+            <td width="75%" class="text-right fw-bold">ONGKOS KIRIM :</td>
+            <td width="25%" class="text-right fw-bold">Rp {{ number_format($transaksi->ongkir, 0, ',', '.') }}</td>
+        </tr>
+        @endif
         <tr>
             <td width="75%" class="text-right fw-bold">TOTAL BAYAR :</td>
             <td width="25%" class="text-right fw-bold grand-total">Rp {{ number_format($transaksi->total_bayar, 0, ',', '.') }}</td>

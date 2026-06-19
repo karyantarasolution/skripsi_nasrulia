@@ -12,12 +12,13 @@ class Produk extends Model
     protected $table = 'produk';
 
     protected $fillable = [
-        'kategori_id', 
-        'nama_produk', 
-        'stok', 
-        'harga_beli', 
-        'harga_jual', 
-        'foto', 
+        'kategori_id',
+        'merk',
+        'nama_produk',
+        'stok',
+        'harga_beli',
+        'harga_jual',
+        'foto',
         'deskripsi'
     ];
 

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Produk;
 use App\Models\Kategori;
+use App\Models\Ekspedisi;
 use App\Models\Transaksi;
 use App\Models\TransaksiDetail;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class KatalogController extends Controller
 {
@@ -24,6 +26,9 @@ class KatalogController extends Controller
         $query = Produk::with('kategori');
         if ($request->kategori) {
             $query->where('kategori_id', $request->kategori);
+        }
+        if ($request->search) {
+            $query->where('nama_produk', 'like', '%' . $request->search . '%');
         }
         $produk = $query->latest()->get();
         $kategori = Kategori::all();
@@ -52,7 +57,8 @@ class KatalogController extends Controller
 
     public function tampilkanKeranjang()
     {
-        return view('pelanggan.keranjang');
+        $ekspedisi = Ekspedisi::all();
+        return view('pelanggan.keranjang', compact('ekspedisi'));
     }
 
     public function hapusItem($id)
@@ -70,9 +76,24 @@ class KatalogController extends Controller
         $keranjang = session()->get('keranjang');
         if (!$keranjang) return redirect()->back();
 
+        $request->validate([
+            'metode_pengambilan' => 'required|in:diantar,diambil',
+            'ekspedisi_id' => 'required_if:metode_pengambilan,diantar|nullable|exists:ekspedisi,id',
+            'jarak_km' => 'required_if:metode_pengambilan,diantar|nullable|numeric|min:0',
+            'alamat_pengiriman' => 'required_if:metode_pengambilan,diantar|nullable|string',
+        ]);
+
         $total = 0;
         foreach ($keranjang as $details) {
             $total += $details['harga'] * $details['jumlah'];
+        }
+
+        $ongkir = 0;
+        if ($request->metode_pengambilan == 'diantar' && $request->ekspedisi_id) {
+            $ekspedisi = Ekspedisi::find($request->ekspedisi_id);
+            if ($ekspedisi) {
+                $ongkir = $ekspedisi->ongkir_per_km * ($request->jarak_km ?? 0);
+            }
         }
 
         $transaksi = Transaksi::create([
@@ -80,8 +101,13 @@ class KatalogController extends Controller
             'user_id' => Auth::id(),
             'nama_pelanggan' => Auth::user()->name,
             'tipe' => 'penjualan',
-            'total_bayar' => $total,
+            'total_bayar' => $total + $ongkir,
             'status' => 'Pending',
+            'metode_pengambilan' => $request->metode_pengambilan,
+            'ekspedisi_id' => $request->metode_pengambilan == 'diantar' ? $request->ekspedisi_id : null,
+            'jarak_km' => $request->metode_pengambilan == 'diantar' ? $request->jarak_km : null,
+            'ongkir' => $ongkir,
+            'alamat_pengiriman' => $request->metode_pengambilan == 'diantar' ? $request->alamat_pengiriman : null,
         ]);
 
         foreach ($keranjang as $id => $details) {
@@ -98,7 +124,6 @@ class KatalogController extends Controller
             $p->save();
         }
 
-        // Notif WhatsApp ke admin
         try {
             $nomor_admin = config('whatsapp.nomor_admin');
             if (!empty($nomor_admin)) {
@@ -106,8 +131,8 @@ class KatalogController extends Controller
                     $nomor_admin,
                     Auth::user()->name,
                     $transaksi->kode_transaksi,
-                    $total,
-                    'Pending - Menunggu Konfirmasi'
+                    $total + $ongkir,
+                    'Pending - Menunggu Pembayaran'
                 );
             }
         } catch (\Exception $e) {
@@ -115,6 +140,46 @@ class KatalogController extends Controller
         }
 
         session()->forget('keranjang');
-        return redirect()->route('dashboard')->with('success', 'Pesanan berhasil dikirim! Silakan hubungi Admin untuk pembayaran.');
+        return redirect()->route('pembayaran.form', $transaksi->id)->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
+    }
+
+    public function formPembayaran($id)
+    {
+        $transaksi = Transaksi::with('detail.produk', 'ekspedisi')->findOrFail($id);
+        return view('pelanggan.pembayaran', compact('transaksi'));
+    }
+
+    public function uploadPembayaran(Request $request, $id)
+    {
+        $transaksi = Transaksi::findOrFail($id);
+
+        $request->validate([
+            'bukti_bayar' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        if ($request->hasFile('bukti_bayar')) {
+            if ($transaksi->bukti_bayar && Storage::disk('public')->exists($transaksi->bukti_bayar)) {
+                Storage::disk('public')->delete($transaksi->bukti_bayar);
+            }
+            $path = $request->file('bukti_bayar')->store('bukti-bayar', 'public');
+            $transaksi->update(['bukti_bayar' => $path]);
+        }
+
+        try {
+            $nomor_admin = config('whatsapp.nomor_admin');
+            if (!empty($nomor_admin)) {
+                $this->wa->sendTransaksiNotif(
+                    $nomor_admin,
+                    Auth::user()->name,
+                    $transaksi->kode_transaksi,
+                    $transaksi->total_bayar,
+                    'Pembayaran diupload - Menunggu Konfirmasi'
+                );
+            }
+        } catch (\Exception $e) {
+            // Abaikan error WA
+        }
+
+        return redirect()->route('pesanan.saya')->with('success', 'Bukti pembayaran berhasil diupload! Menunggu konfirmasi admin.');
     }
 }

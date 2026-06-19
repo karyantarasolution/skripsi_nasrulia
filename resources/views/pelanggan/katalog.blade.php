@@ -1,6 +1,9 @@
 <x-app-layout>
- <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark">Katalog Produk NJK</h3>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark">Katalog Produk NJK</h3>
+            <p class="text-muted mb-0">Temukan produk kebutuhan komputer Anda.</p>
+        </div>
         
         @if(Auth::user()->peran == 'pelanggan')
         <a href="{{ route('keranjang.index') }}" class="btn btn-dark rounded-pill px-4">
@@ -10,8 +13,8 @@
         @endif
     </div>
 
-    <div class="d-flex gap-2 mb-4 overflow-auto pb-2">
-        <a href="{{ route('pelanggan.katalog') }}" class="btn btn-sm btn-outline-primary rounded-pill {{ !request('kategori') ? 'active' : '' }}">Semua</a>
+    <div class="d-flex gap-2 mb-4 overflow-auto pb-2 flex-wrap">
+        <a href="{{ route('pelanggan.katalog') }}" class="btn btn-sm btn-outline-primary rounded-pill {{ !request('kategori') && !request('search') ? 'active' : '' }}">Semua</a>
         @foreach($kategori as $k)
             <a href="?kategori={{ $k->id }}" class="btn btn-sm btn-outline-primary rounded-pill {{ request('kategori') == $k->id ? 'active' : '' }}">{{ $k->nama_kategori }}</a>
         @endforeach
@@ -32,6 +35,9 @@
                     <span class="position-absolute top-0 end-0 m-3 badge bg-primary shadow-sm">{{ $p->kategori->nama_kategori }}</span>
                 </div>
                 <div class="card-body">
+                    @if($p->merk)
+                        <small class="text-info fw-semibold">{{ $p->merk }}</small>
+                    @endif
                     <h6 class="fw-bold mb-1 text-dark">{{ $p->nama_produk }}</h6>
                     <p class="text-muted small mb-3 text-truncate">{{ $p->deskripsi ?? 'Ready stock unit premium.' }}</p>
                     <div class="d-flex justify-content-between align-items-center">
@@ -39,7 +45,7 @@
                         <span class="small text-muted">Stok: {{ $p->stok }}</span>
                     </div>
                 </div>
-           <div class="card-footer bg-white border-0 pb-4 px-3">
+                <div class="card-footer bg-white border-0 pb-4 px-3">
                     @if(Auth::user()->peran == 'pelanggan')
                         @if($p->stok > 0)
                         <form action="{{ route('keranjang.tambah', $p->id) }}" method="POST">
@@ -61,6 +67,7 @@
         </div>
         @empty
         <div class="text-center py-5">
+            <i class="bi bi-box-seam fs-1 text-muted opacity-50 d-block mb-3"></i>
             <h5 class="text-muted">Produk tidak ditemukan.</h5>
         </div>
         @endforelse

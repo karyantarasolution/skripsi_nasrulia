@@ -12,8 +12,11 @@ class ServisDetail extends Model
     protected $fillable = [
         'transaksi_id',
         'jasa_servis_id',
+        'teknisi_id',
         'keluhan',
         'status',
+        'catatan_teknisi',
+        'tanggal_selesai',
     ];
 
     public function transaksi(): BelongsTo
@@ -24,5 +27,10 @@ class ServisDetail extends Model
     public function jasaServis(): BelongsTo
     {
         return $this->belongsTo(JasaServis::class, 'jasa_servis_id');
+    }
+
+    public function teknisi(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'teknisi_id');
     }
 }

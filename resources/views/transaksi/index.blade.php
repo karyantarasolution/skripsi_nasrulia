@@ -173,6 +173,25 @@
                         </table>
                     </div>
                     
+                    @if($t->metode_pengambilan == 'diantar' && $t->alamat_pengiriman)
+                    <div class="alert alert-info border-0 mt-3 mb-0 rounded-3">
+                        <small class="fw-bold d-block"><i class="bi bi-truck me-1"></i> Informasi Pengiriman:</small>
+                        <small class="text-dark">Ekspedisi: {{ $t->ekspedisi->nama_ekspedisi ?? '-' }} | Jarak: {{ $t->jarak_km ?? '-' }} km | Ongkir: Rp {{ number_format($t->ongkir, 0, ',', '.') }}</small>
+                        <small class="text-dark d-block">Alamat: {{ $t->alamat_pengiriman }}</small>
+                    </div>
+                    @elseif($t->metode_pengambilan == 'diambil')
+                    <div class="alert alert-success border-0 mt-3 mb-0 rounded-3">
+                        <small><i class="bi bi-shop me-1"></i> Metode: Ambil di Toko</small>
+                    </div>
+                    @endif
+
+                    @if($t->bukti_bayar)
+                    <div class="mt-3 text-center">
+                        <small class="fw-bold d-block mb-2">Bukti Pembayaran:</small>
+                        <img src="{{ asset('storage/' . $t->bukti_bayar) }}" class="rounded-3 shadow-sm" style="max-height: 200px; object-fit: contain; cursor: pointer;" onclick="window.open(this.src)" alt="Bukti Bayar">
+                    </div>
+                    @endif
+
                     @if($t->status == 'Lunas')
                     <div class="text-center mt-4">
                         <span class="badge bg-success bg-opacity-10 text-success px-4 py-2 rounded-pill fs-6"><i class="bi bi-check-circle-fill me-2"></i>Status: LUNAS</span>

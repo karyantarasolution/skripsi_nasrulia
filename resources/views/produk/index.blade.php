@@ -22,12 +22,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th width="8%" class="text-center rounded-start">Foto</th>
+                            <th width="7%" class="text-center rounded-start">Foto</th>
                             <th>Nama Produk</th>
+                            <th>Merk</th>
                             <th>Kategori</th>
                             <th class="text-center">Stok</th>
                             <th>Harga Jual</th>
-                            <th width="15%" class="text-center rounded-end">Aksi</th>
+                            <th width="13%" class="text-center rounded-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,6 +47,7 @@
                                 <div class="fw-bold text-dark">{{ $p->nama_produk }}</div>
                                 <small class="text-muted text-truncate d-inline-block" style="max-width: 200px;">{{ $p->deskripsi ?? 'Tidak ada deskripsi' }}</small>
                             </td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">{{ $p->merk ?? '-' }}</span></td>
                             <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">{{ $p->kategori->nama_kategori }}</span></td>
                             <td class="text-center">
                                 @if($p->stok <= 5)
@@ -94,6 +96,10 @@
                                                     <label class="form-label fw-semibold text-muted small">Nama Produk</label>
                                                     <input type="text" name="nama_produk" class="form-control form-control-lg" value="{{ $p->nama_produk }}" required>
                                                 </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold text-muted small">Merk / Brand</label>
+                                                    <input type="text" name="merk" class="form-control form-control-lg" value="{{ $p->merk }}" placeholder="Contoh: Asus, Samsung, Epson">
+                                                </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label fw-semibold text-muted small">Stok</label>
                                                     <input type="number" name="stok" class="form-control form-control-lg" value="{{ $p->stok }}" required min="0">
@@ -127,7 +133,7 @@
                         </div>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-box-seam fs-1 d-block mb-2 opacity-50"></i>
                                 Belum ada data produk.<br>Klik tombol "Tambah Produk" untuk memulai.
                             </td>
@@ -162,6 +168,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted small">Nama Produk</label>
                                 <input type="text" name="nama_produk" class="form-control form-control-lg" placeholder="Contoh: Asus ROG Zephyrus..." required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Merk / Brand</label>
+                                <input type="text" name="merk" class="form-control form-control-lg" placeholder="Contoh: Asus, Samsung, Epson">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-semibold text-muted small">Stok</label>

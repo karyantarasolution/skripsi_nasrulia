@@ -23,6 +23,73 @@
         </div>
     </div>
 
+    @if(Auth::user()->peran == 'teknisi')
+    <div class="row g-4 mb-4">
+        @php
+            $servis_saya = \App\Models\ServisDetail::where('teknisi_id', Auth::id())->count();
+            $servis_proses = \App\Models\ServisDetail::where('teknisi_id', Auth::id())->where('status', 'proses')->count();
+            $servis_selesai = \App\Models\ServisDetail::where('teknisi_id', Auth::id())->where('status', 'selesai')->count();
+            $servis_tersedia = \App\Models\ServisDetail::whereNull('teknisi_id')->count();
+        @endphp
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold mb-0 text-uppercase" style="font-size: 0.8rem;">Servis Saya</h6>
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-tools fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $servis_saya }}</h2>
+                    <small class="text-muted fw-semibold">Total servis ditangani</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold mb-0 text-uppercase" style="font-size: 0.8rem;">Sedang Diproses</h6>
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-gear fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $servis_proses }}</h2>
+                    <small class="text-muted fw-semibold">Masih dikerjakan</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold mb-0 text-uppercase" style="font-size: 0.8rem;">Selesai</h6>
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-check-circle fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $servis_selesai }}</h2>
+                    <small class="text-success fw-semibold">Sudah selesai</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted fw-bold mb-0 text-uppercase" style="font-size: 0.8rem;">Tersedia</h6>
+                        <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-inbox fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-dark">{{ $servis_tersedia }}</h2>
+                    <small class="text-muted fw-semibold">Belum diambil</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     @if(Auth::user()->peran == 'admin' || Auth::user()->peran == 'kasir')
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">

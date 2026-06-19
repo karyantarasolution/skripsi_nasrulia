@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Ekspedisi;
+use Illuminate\Http\Request;
+
+class EkspedisiController extends Controller
+{
+    public function index()
+    {
+        $ekspedisi = Ekspedisi::latest()->get();
+        return view('ekspedisi.index', compact('ekspedisi'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'nama_ekspedisi' => 'required|string|max:255',
+            'ongkir_per_km' => 'required|numeric|min:0',
+        ]);
+
+        Ekspedisi::create($request->all());
+
+        return redirect()->route('ekspedisi.index')->with('success', 'Ekspedisi berhasil ditambahkan!');
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nama_ekspedisi' => 'required|string|max:255',
+            'ongkir_per_km' => 'required|numeric|min:0',
+        ]);
+
+        $ekspedisi = Ekspedisi::findOrFail($id);
+        $ekspedisi->update($request->all());
+
+        return redirect()->route('ekspedisi.index')->with('success', 'Ekspedisi berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $ekspedisi = Ekspedisi::findOrFail($id);
+        $ekspedisi->delete();
+
+        return redirect()->route('ekspedisi.index')->with('success', 'Ekspedisi berhasil dihapus!');
+    }
+}

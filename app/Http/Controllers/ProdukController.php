@@ -24,6 +24,7 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required|string|max:255',
             'kategori_id' => 'required|exists:kategori,id',
+            'merk'        => 'nullable|string|max:255',
             'stok'        => 'required|integer|min:0',
             'harga_beli'  => 'required|numeric|min:0',
             'harga_jual'  => 'required|numeric|min:0',
@@ -33,7 +34,6 @@ class ProdukController extends Controller
 
         $data = $request->all();
 
-        // Jika ada upload foto
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('produk', 'public');
         }
@@ -48,6 +48,7 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required|string|max:255',
             'kategori_id' => 'required|exists:kategori,id',
+            'merk'        => 'nullable|string|max:255',
             'stok'        => 'required|integer|min:0',
             'harga_beli'  => 'required|numeric|min:0',
             'harga_jual'  => 'required|numeric|min:0',

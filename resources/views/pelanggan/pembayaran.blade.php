@@ -1,0 +1,72 @@
+<x-app-layout>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-wallet2 fs-2"></i>
+                        </div>
+                        <h4 class="fw-bold">Pembayaran Pesanan</h4>
+                        <p class="text-muted">Kode: <strong class="text-primary">{{ $transaksi->kode_transaksi }}</strong></p>
+                    </div>
+
+                    <div class="alert alert-info border-0 rounded-3 d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-3 fs-5"></i>
+                        <small>Silakan transfer ke rekening BNI: <strong>1234567890</strong> a.n. <strong>Nusantara Jaya Komputer</strong> lalu upload bukti transfer di bawah.</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-3 border-bottom">
+                        <span class="text-muted">Total yang harus dibayar:</span>
+                        <span class="fw-bold text-primary fs-5">Rp {{ number_format($transaksi->total_bayar, 0, ',', '.') }}</span>
+                    </div>
+
+                    @if($transaksi->metode_pengambilan == 'diantar')
+                    <div class="d-flex justify-content-between py-3 border-bottom">
+                        <span class="text-muted">Ongkos Kirim:</span>
+                        <span class="fw-bold">Rp {{ number_format($transaksi->ongkir, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-3 border-bottom">
+                        <span class="text-muted">Ekspedisi:</span>
+                        <span class="fw-bold">{{ $transaksi->ekspedisi->nama_ekspedisi ?? '-' }} ({{ $transaksi->jarak_km ?? '-' }} km)</span>
+                    </div>
+                    @else
+                    <div class="d-flex justify-content-between py-3 border-bottom">
+                        <span class="text-muted">Metode:</span>
+                        <span class="fw-bold">Ambil di Toko</span>
+                    </div>
+                    @endif
+
+                    @if($transaksi->bukti_bayar)
+                    <div class="mt-4 text-center">
+                        <small class="text-muted d-block mb-2">Bukti pembayaran yang sudah diupload:</small>
+                        <img src="{{ asset('storage/' . $transaksi->bukti_bayar) }}" class="rounded-3 shadow-sm" style="max-height: 200px; object-fit: contain;">
+                        <div class="alert alert-success mt-3 border-0 rounded-3">
+                            <i class="bi bi-check-circle-fill me-1"></i> Bukti sudah diupload, menunggu konfirmasi admin.
+                        </div>
+                    </div>
+                    @else
+                    <form action="{{ route('pembayaran.upload', $transaksi->id) }}" method="POST" enctype="multipart/form-data" class="mt-4">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Upload Bukti Transfer</label>
+                            <input type="file" name="bukti_bayar" class="form-control form-control-lg @error('bukti_bayar') is-invalid @enderror" accept="image/*" required>
+                            <small class="text-muted">Format: JPG, PNG, WEBP. Maks: 2MB.</small>
+                            @error('bukti_bayar') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3">
+                            <i class="bi bi-upload me-2"></i> Upload Bukti Pembayaran
+                        </button>
+                    </form>
+                    @endif
+
+                    <div class="text-center mt-4">
+                        <a href="{{ route('pesanan.saya') }}" class="text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i> Kembali ke Pesanan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>

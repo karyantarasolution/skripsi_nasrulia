@@ -3,39 +3,50 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Ekspedisi;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
   public function run(): void
-  
-{
+  {
     $this->call([
         AturanChatbotSeeder::class,
     ]);
-    \App\Models\User::create([
-        'name' => 'Admin NJK',
-        'email' => 'admin@gmail.com',
-        'password' => bcrypt('password'),
-        'peran' => 'admin',
-    ]);
 
-    \App\Models\User::create([
-        'name' => 'Kasir NJK',
-        'email' => 'kasir@gmail.com',
-        'password' => bcrypt('password'),
-        'peran' => 'kasir',
-    ]);
+    User::firstOrCreate(
+        ['email' => 'admin@gmail.com'],
+        ['name' => 'Admin NJK', 'password' => bcrypt('password'), 'peran' => 'admin']
+    );
 
-    \App\Models\User::create([
-        'name' => 'Pelanggan',
-        'email' => 'user@gmail.com',
-        'password' => bcrypt('password'),
-        'peran' => 'pelanggan',
-    ]);
-    }
+    User::firstOrCreate(
+        ['email' => 'kasir@gmail.com'],
+        ['name' => 'Kasir NJK', 'password' => bcrypt('password'), 'peran' => 'kasir']
+    );
+
+    User::firstOrCreate(
+        ['email' => 'user@gmail.com'],
+        ['name' => 'Pelanggan', 'password' => bcrypt('password'), 'peran' => 'pelanggan']
+    );
+
+    User::firstOrCreate(
+        ['email' => 'teknisi@gmail.com'],
+        ['name' => 'Teknisi NJK', 'password' => bcrypt('password'), 'peran' => 'teknisi']
+    );
+
+    Ekspedisi::firstOrCreate(
+        ['nama_ekspedisi' => 'JNE'],
+        ['ongkir_per_km' => 2000]
+    );
+
+    Ekspedisi::firstOrCreate(
+        ['nama_ekspedisi' => 'TIKI'],
+        ['ongkir_per_km' => 2500]
+    );
+
+    Ekspedisi::firstOrCreate(
+        ['nama_ekspedisi' => 'SiCepat'],
+        ['ongkir_per_km' => 1500]
+    );
+  }
 }

@@ -47,6 +47,11 @@
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg fw-bold">Masuk</button>
                         </div>
+                        
+                        <div class="text-center mt-4">
+                            <span class="text-muted small">Belum punya akun?</span>
+                            <a href="{{ route('register') }}" class="text-decoration-none small fw-semibold">Daftar disini</a>
+                        </div>
                     </form>
 
                 </div>
