@@ -7,11 +7,17 @@ use App\Models\JasaServis;
 use App\Models\Ekspedisi;
 use App\Models\AturanChatbot;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class DeepSeekAiService
+class GroqAiService
 {
+    protected string $apiKey;
+    protected string $model;
+    protected string $baseUrl;
+    protected int $timeout;
+
     protected string $geminiApiKey;
     protected string $geminiModel;
     protected string $geminiBaseUrl;
@@ -20,31 +26,29 @@ class DeepSeekAiService
     protected string $deepSeekModel;
     protected string $deepSeekBaseUrl;
 
-    protected int $timeout;
-
     public function __construct()
     {
+        $this->apiKey = (string) (config('services.groq.api_key', '') ?: (env('GROQ_API_KEY', '') ?: ''));
+        $this->model = (string) config('services.groq.model', 'llama-3.3-70b-versatile');
+        $this->baseUrl = rtrim((string) config('services.groq.base_url', 'https://api.groq.com/openai/v1'), '/');
+        $this->timeout = (int) config('services.groq.timeout', 30);
+
         $this->geminiApiKey = (string) (config('services.gemini.api_key', '') ?: (env('GEMINI_API_KEY', '') ?: ''));
         $this->geminiModel = (string) config('services.gemini.model', 'gemini-3.6-flash');
         $this->geminiBaseUrl = rtrim((string) config('services.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/');
 
-        $this->deepSeekApiKey = (string) (config('services.deepseek.api_key', '') ?: (env('DEEPSEEK_API_KEY', '') ?: (config('services.grok.api_key', '') ?: (env('GROK_API_KEY', '') ?: ''))));
+        $this->deepSeekApiKey = (string) (config('services.deepseek.api_key', '') ?: (env('DEEPSEEK_API_KEY', '') ?: ''));
         $this->deepSeekModel = (string) config('services.deepseek.model', 'deepseek-chat');
         $this->deepSeekBaseUrl = rtrim((string) config('services.deepseek.base_url', 'https://api.deepseek.com'), '/');
-
-        $this->timeout = (int) config('services.deepseek.timeout', 30);
     }
 
-    /**
-     * Memeriksa apakah salah satu AI API Key (Gemini atau DeepSeek) telah dikonfigurasi.
-     */
     public function isConfigured(): bool
     {
-        return !empty(trim($this->geminiApiKey)) || !empty(trim($this->deepSeekApiKey));
+        return !empty(trim($this->apiKey));
     }
 
     /**
-     * Menghasilkan balasan dari AI (Google Gemini sebagai prioritas utama, DeepSeek sebagai cadangan).
+     * Menghasilkan balasan AI. Prioritas: Groq -> Gemini -> DeepSeek -> fallback lokal DB.
      *
      * @param string $userMessage
      * @param array $chatHistory
@@ -52,15 +56,15 @@ class DeepSeekAiService
      */
     public function chat(string $userMessage, array $chatHistory = []): array
     {
-        // 1. Jika API key belum diisi sama sekali, gunakan fallback lokal cerdas
-        if (!$this->isConfigured()) {
-            return $this->handleFallback($userMessage, "Layanan AI belum dihubungkan (API Key belum dikonfigurasi).");
-        }
-
-        // 2. Siapkan Context Data & System Prompt
         $systemPrompt = $this->buildSystemPrompt();
 
-        // 3. Coba menggunakan Google Gemini AI jika API Key tersedia
+        if ($this->isConfigured()) {
+            $groqResult = $this->callGroqApi($userMessage, $chatHistory, $systemPrompt);
+            if ($groqResult !== null) {
+                return $groqResult;
+            }
+        }
+
         if (!empty(trim($this->geminiApiKey))) {
             $geminiResult = $this->callGeminiApi($userMessage, $chatHistory, $systemPrompt);
             if ($geminiResult !== null) {
@@ -68,7 +72,6 @@ class DeepSeekAiService
             }
         }
 
-        // 4. Coba menggunakan DeepSeek AI jika Gemini tidak ada atau gagal
         if (!empty(trim($this->deepSeekApiKey))) {
             $deepSeekResult = $this->callDeepSeekApi($userMessage, $chatHistory, $systemPrompt);
             if ($deepSeekResult !== null) {
@@ -76,8 +79,68 @@ class DeepSeekAiService
             }
         }
 
-        // 5. Fallback ke pencarian database lokal jika semua layanan AI mengalami kendala
-        return $this->handleFallback($userMessage, "Maaf, server AI sedang mengalami sedikit kendala.");
+        $notice = $this->isConfigured()
+            ? "Maaf, server AI Groq sedang mengalami sedikit kendala."
+            : "Layanan AI belum dihubungkan (GROQ_API_KEY belum dikonfigurasi).";
+
+        return $this->handleFallback($userMessage, $notice);
+    }
+
+    /**
+     * Memanggil Groq API (OpenAI-compatible: /chat/completions).
+     */
+    protected function callGroqApi(string $userMessage, array $chatHistory, string $systemPrompt): ?array
+    {
+        try {
+            $messages = [
+                ['role' => 'system', 'content' => $systemPrompt]
+            ];
+
+            $recentHistory = array_slice($chatHistory, -6);
+            foreach ($recentHistory as $msg) {
+                if (isset($msg['role'], $msg['content'])) {
+                    $messages[] = [
+                        'role' => $msg['role'] === 'user' ? 'user' : 'assistant',
+                        'content' => (string) $msg['content'],
+                    ];
+                }
+            }
+
+            $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+            $response = Http::withToken($this->apiKey)
+                ->timeout($this->timeout)
+                ->post("{$this->baseUrl}/chat/completions", [
+                    'model' => $this->model,
+                    'messages' => $messages,
+                    'temperature' => 0.5,
+                    'max_tokens' => 1500,
+                ]);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $replyText = $responseData['choices'][0]['message']['content'] ?? '';
+
+                if (!empty(trim($replyText))) {
+                    $recommended = $this->findRelevantRecommendations($userMessage, $replyText);
+
+                    return [
+                        'jawaban' => $replyText,
+                        'rekomendasi_produk' => $recommended['produk'],
+                        'rekomendasi_jasa' => $recommended['jasa'],
+                    ];
+                }
+            }
+
+            Log::warning('Groq API returned unsuccessful response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Groq API Exception: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
@@ -87,33 +150,22 @@ class DeepSeekAiService
     {
         try {
             $contents = [];
-            $recentHistory = array_slice($chatHistory, -6);
-            foreach ($recentHistory as $msg) {
+            foreach (array_slice($chatHistory, -6) as $msg) {
                 if (isset($msg['role'], $msg['content'])) {
-                    $role = ($msg['role'] === 'user') ? 'user' : 'model';
                     $contents[] = [
-                        'role' => $role,
-                        'parts' => [
-                            ['text' => (string) $msg['content']]
-                        ]
+                        'role' => ($msg['role'] === 'user') ? 'user' : 'model',
+                        'parts' => [['text' => (string) $msg['content']]]
                     ];
                 }
             }
-
             $contents[] = [
                 'role' => 'user',
-                'parts' => [
-                    ['text' => $userMessage]
-                ]
+                'parts' => [['text' => $userMessage]]
             ];
 
             $endpoint = "{$this->geminiBaseUrl}/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
             $payload = [
-                'system_instruction' => [
-                    'parts' => [
-                        ['text' => $systemPrompt]
-                    ]
-                ],
+                'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
                 'contents' => $contents,
                 'generationConfig' => [
                     'temperature' => 0.5,
@@ -159,8 +211,7 @@ class DeepSeekAiService
                 ['role' => 'system', 'content' => $systemPrompt]
             ];
 
-            $recentHistory = array_slice($chatHistory, -6);
-            foreach ($recentHistory as $msg) {
+            foreach (array_slice($chatHistory, -6) as $msg) {
                 if (isset($msg['role'], $msg['content'])) {
                     $messages[] = [
                         'role' => $msg['role'] === 'user' ? 'user' : 'assistant',
@@ -169,10 +220,7 @@ class DeepSeekAiService
                 }
             }
 
-            $messages[] = [
-                'role' => 'user',
-                'content' => $userMessage,
-            ];
+            $messages[] = ['role' => 'user', 'content' => $userMessage];
 
             $response = Http::withToken($this->deepSeekApiKey)
                 ->timeout($this->timeout)
@@ -210,12 +258,11 @@ class DeepSeekAiService
     }
 
     /**
-     * Membangun System Prompt dengan batasan ketat (Guardrails) dan katalog produk/jasa terkini.
+     * Membangun System Prompt dinamis dengan data database REAL (Produk, JasaServis, Ekspedisi,
+     * Aturan Chatbot & info toko). Model AI "fine-tuned" via konteks data yang diambil dari database.
      */
     public function buildSystemPrompt(): string
     {
-        // Ambil HANYA field publik produk (ID, nama, merk, harga_jual, stok, deskripsi, kategori)
-        // PERHATIAN: JANGAN PERNAH menyertakan harga_beli atau data transaksi/laba rugi
         $products = Produk::with('kategori:id,nama_kategori')
             ->select('id', 'kategori_id', 'merk', 'nama_produk', 'stok', 'harga_jual', 'deskripsi')
             ->get();
@@ -244,8 +291,14 @@ class DeepSeekAiService
         }
 
         $aturanListStr = "";
-        foreach (AturanChatbot::select('kata_kunci', 'jawaban')->get() as $ar) {
+        $aturanRules = AturanChatbot::select('kata_kunci', 'jawaban')->get();
+        foreach ($aturanRules as $ar) {
             $aturanListStr .= "- Kata kunci \"{$ar->kata_kunci}\" => {$ar->jawaban}\n";
+        }
+
+        $userContext = '';
+        if (Auth::check()) {
+            $userContext = "Pengguna saat ini adalah \"{$this->esc(Auth::user()->name)}\" dengan peran \"{$this->esc(Auth::user()->peran)}\".";
         }
 
         return <<<PROMPT
@@ -256,6 +309,9 @@ Kamu adalah "NJK Assistant", asisten AI resmi dari toko komputer "Nusantara Jaya
 - Nomor WhatsApp / Kontak Resmi Toko: 0851-8239-2525 dan 0851-8239-2526
 - Jam Operasional Toko: Senin s/d Sabtu, Pukul 09.00 - 17.00 WITA (Hari Minggu Libur).
 
+=== KONTEKS PENGGUNA ===
+{$userContext}
+
 === ATURAN & BATASAN KETAT (GUARDRAILS) ===
 1. RUANG LINGKUP PERTANYAAN (SCOPE):
    - Kamu HANYA boleh menjawab pertanyaan seputar barang/produk yang dijual di toko (laptop, PC, printer, sparepart, monitor, keyboard, mouse, aksesoris, dll.) dan layanan servis/perbaikan perangkat komputer, printer, atau jaringan.
@@ -264,27 +320,25 @@ Kamu adalah "NJK Assistant", asisten AI resmi dari toko komputer "Nusantara Jaya
 2. PENANGANAN KERUSAKAN & BANTUAN TEKNISI REAL:
    - Apabila pelanggan mengalami kendala teknis rumit, kerusakan fisik (seperti mati total, korsleting, layar pecah, engsel hancur, kena air, butuh pengecekan komponen langsung), atau pelanggan meminta bantuan/konsultasi dengan teknisi sungguhan (real human technician), SELALU berikan nomor kontak WhatsApp Toko (0851-8239-2525 / 0851-8239-2526) atau sarankan membawa unit ke toko offline kami di jam operasional.
 
-3. SIFAT READ-ONLY (DILARANG UBAH DATA BARANG & HARGA):
-   - Kamu adalah asisten informasi yang bersifat READ-ONLY.
-   - Kamu TIDAK BISA dan TIDAK MEMILIKI HAK untuk mengedit, menambah, menghapus data barang, mengubah harga jual, atau mengubah jumlah stok barang di sistem.
-   - Jika pengguna meminta perubahan harga (misal "tolong ubah harga jadi murah"), jelaskan dengan sopan bahwa harga sudah sesuai dengan sistem resmi toko dan kamu tidak dapat mengubahnya.
+3. SIFAT READ-ONLY (DILARANG UBAH DATA):
+   - Kamu adalah asisten informasi yang bersifat READ-ONLY. Kamu TIDAK BISA mengubah harga, stok, atau data lainnya. Data produk/jasa pada prompt ini diambil langsung dari DATABASE (real-time), jawablah berdasarkan data tersebut dan jangan pernah berhalusinasi.
 
 4. PERLINDUNGAN DATA INTERNAL & KEUANGAN:
-   - Kamu DILARANG KERAS memberikan atau mendiskusikan data internal toko seperti: harga beli/modal (HPP), margin keuntungan, data supplier, omset, atau laporan keuangan toko.
-   - Jika ada yang mencoba memancing data internal tersebut, tolak dengan tegas dan sopan bahwa informasi tersebut bersifat rahasia internal toko dan kamu tidak memiliki akses ke data tersebut.
+   - Kamu DILARANG KERAS memberikan data internal seperti: harga beli/modal (HPP), margin, data supplier, omset, atau laporan keuangan, KECUALI peran pengguna adalah admin/pimpinan dan memintanya secara resmi melalui dashboard.
 
 5. FORMAT & GAYA KOMUNIKASI:
    - Gunakan Bahasa Indonesia yang ramah, santun, jelas, dan profesional.
    - Gunakan format Markdown (seperti **bold** untuk nama produk/harga/nomor HP, dan bullet list) agar mudah dibaca.
    - Informasikan status stok dengan jujur (Ready Stock atau Stok Habis).
+   - Jika ada data yang tidak tersedia di daftar, jawab sejujurnya bahwa data tersebut tidak ditemukan.
 
-=== DAFTAR PRODUK YANG DIJUAL TOKO (HANYA INFORMASI PUBLIK) ===
+=== DAFTAR PRODUK YANG DIJUAL TOKO (DATA REAL DARI DATABASE) ===
 {$productListStr}
 
-=== DAFTAR LAYANAN SERVIS TOKO ===
+=== DAFTAR LAYANAN SERVIS TOKO (DATA REAL DARI DATABASE) ===
 {$serviceListStr}
 
-=== DAFTAR EKSPEDISI & PENGIRIMAN ===
+=== DAFTAR EKSPEDISI & PENGIRIMAN (DATA REAL DARI DATABASE) ===
 {$ekspedisiListStr}
 
 === PANDUAN JAWABAN CEPAT (DARI ATURAN CHATBOT TOKO) ===
@@ -293,8 +347,13 @@ Gunakan panduan berikut bila pertanyaan cocok, tetapi tetaplah menyesuaikan jawa
 PROMPT;
     }
 
+    protected function esc(string $value): string
+    {
+        return str_replace(["\r", "\n"], ' ', trim($value));
+    }
+
     /**
-     * Mencocokkan produk & jasa relevan dari percakapan untuk dijadikan kartu rekomendasi di UI.
+     * Mencocokkan produk & jasa relevan untuk kartu rekomendasi di UI.
      */
     protected function findRelevantRecommendations(string $userMessage, string $aiReply): array
     {
@@ -306,7 +365,6 @@ PROMPT;
         $matchedProducts = collect();
         $matchedServices = collect();
 
-        // 1. Cek kecocokan produk
         foreach ($products as $p) {
             $nameLower = strtolower($p->nama_produk);
             $merkLower = strtolower($p->merk ?? '');
@@ -314,14 +372,13 @@ PROMPT;
             if (str_contains($text, $nameLower)) {
                 $matchedProducts->push($p);
             } elseif (!empty($merkLower) && str_contains($text, $merkLower) && (
-                str_contains($text, strtolower($p->kategori->nama_kategori ?? '')) || 
+                str_contains($text, strtolower($p->kategori->nama_kategori ?? '')) ||
                 str_contains($nameLower, 'laptop') || str_contains($nameLower, 'printer')
             )) {
                 $matchedProducts->push($p);
             }
         }
 
-        // 2. Cek kecocokan jasa servis
         foreach ($services as $s) {
             $jasaLower = strtolower($s->nama_jasa);
             if (str_contains($text, $jasaLower)) {
@@ -348,7 +405,7 @@ PROMPT;
     }
 
     /**
-     * Fallback cerdas jika API AI tidak tersedia / belum dikonfigurasi.
+     * Fallback cerdas: pencarian database lokal & aturan chatbot.
      */
     protected function handleFallback(string $userMessage, string $notice = ''): array
     {
@@ -362,6 +419,17 @@ PROMPT;
 
             return [
                 'jawaban' => $jawaban,
+                'rekomendasi_produk' => collect(),
+                'rekomendasi_jasa' => collect(),
+            ];
+        }
+
+        $ruleMatch = AturanChatbot::all()->first(function ($rule) use ($pesanLower) {
+            return str_contains($pesanLower, strtolower(trim($rule->kata_kunci)));
+        });
+        if ($ruleMatch) {
+            return [
+                'jawaban' => $ruleMatch->jawaban,
                 'rekomendasi_produk' => collect(),
                 'rekomendasi_jasa' => collect(),
             ];

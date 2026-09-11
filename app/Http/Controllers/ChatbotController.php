@@ -10,16 +10,16 @@ use App\Models\Komplain;
 use App\Models\User;
 use App\Models\Notifikasi;
 use App\Services\WhatsAppService;
-use App\Services\DeepSeekAiService;
+use App\Services\GroqAiService;
 use Illuminate\Support\Facades\Auth;
 
 class ChatbotController extends Controller
 {
-    protected DeepSeekAiService $deepSeekService;
+    protected GroqAiService $aiService;
 
-    public function __construct(DeepSeekAiService $deepSeekService)
+    public function __construct(GroqAiService $aiService)
     {
-        $this->deepSeekService = $deepSeekService;
+        $this->aiService = $aiService;
     }
 
     /**
@@ -235,12 +235,12 @@ class ChatbotController extends Controller
             }
         }
 
-        // --- 5. PROSES PERTANYAAN MENGGUNAKAN DEEPSEEK AI DENGAN GUARDRAILS KETAT ---
+        // --- 5. PROSES PERTANYAAN MENGGUNAKAN GROQ AI (SUPPORT DATABASE CONTEXT) ---
         // Ambil riwayat chat dari session
         $chatHistory = session('chatbot_history', []);
 
-        // Dapatkan jawaban cerdas dan rekomendasi dari DeepSeek AI Service
-        $aiResult = $this->deepSeekService->chat($pesan_original, $chatHistory);
+        // Dapatkan jawaban cerdas dan rekomendasi dari Groq AI Service (fallback Gemini/DeepSeek)
+        $aiResult = $this->aiService->chat($pesan_original, $chatHistory);
 
         // Update riwayat chat pada session (maksimal 6 interaksi terakhir)
         $chatHistory[] = ['role' => 'user', 'content' => $pesan_original];
@@ -266,7 +266,7 @@ class ChatbotController extends Controller
     /**
      * Menyimpan log percakapan chatbot.
      */
-    protected function saveChatLog(string $pesan, string $jawaban, ?string $kategori = 'deepseek_ai'): void
+    protected function saveChatLog(string $pesan, string $jawaban, ?string $kategori = 'groq_ai'): void
     {
         try {
             ChatbotLog::create([

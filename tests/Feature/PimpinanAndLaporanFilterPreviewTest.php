@@ -115,6 +115,22 @@ class PimpinanAndLaporanFilterPreviewTest extends TestCase
         $resCustom->assertSee('s/d');
     }
 
+    public function test_laporan_preview_with_mingguan_weekly_filter(): void
+    {
+        $pimpinan = User::where('peran', 'pimpinan')->first() ?? User::factory()->create(['peran' => 'pimpinan']);
+
+        $minggu = Carbon::now('Asia/Makassar')->weekOfYear;
+        $tahun = Carbon::now('Asia/Makassar')->format('Y');
+
+        $resMingguan = $this->actingAs($pimpinan)->get('/laporan/preview/transaksi-penjualan?filter_type=mingguan&minggu=' . $minggu . '&tahun_mingguan=' . $tahun);
+        $resMingguan->assertStatus(200);
+        $resMingguan->assertSee('Minggu ke-' . $minggu . ':');
+
+        $resIndex = $this->actingAs($pimpinan)->get('/laporan?filter_type=mingguan&minggu=' . $minggu . '&tahun_mingguan=' . $tahun);
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Minggu ke-' . $minggu);
+    }
+
     public function test_all_laporan_preview_types_render_successfully(): void
     {
         $pimpinan = User::where('peran', 'pimpinan')->first() ?? User::factory()->create(['peran' => 'pimpinan']);

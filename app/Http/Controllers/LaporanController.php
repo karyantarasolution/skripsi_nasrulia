@@ -79,6 +79,16 @@ class LaporanController extends Controller
             $tgl_awal = $date->copy()->startOfDay();
             $tgl_akhir = $date->copy()->endOfDay();
             $periode_label = 'Harian: ' . $date->translatedFormat('d F Y');
+        } elseif ($filter_type === 'mingguan' && $request->filled('minggu') && $request->filled('tahun_mingguan')) {
+            $tahun = (int)$request->query('tahun_mingguan');
+            $minggu = (int)$request->query('minggu');
+            // Hitung hari Senin pada pekan yang memuat tanggal 1 Januari (ISO week: Senin = awal pekan)
+            $firstDay = Carbon::createFromDate($tahun, 1, 1, 'Asia/Makassar');
+            $daysSinceMonday = ((int)$firstDay->dayOfWeek + 6) % 7;
+            $firstMonday = $firstDay->copy()->subDays($daysSinceMonday);
+            $tgl_awal = $firstMonday->copy()->addWeeks($minggu - 1)->startOfDay();
+            $tgl_akhir = $firstMonday->copy()->addWeeks($minggu - 1)->addDays(6)->endOfDay();
+            $periode_label = 'Minggu ke-' . $minggu . ': ' . $tgl_awal->translatedFormat('d M') . ' s/d ' . $tgl_akhir->translatedFormat('d M Y');
         } elseif ($filter_type === 'bulanan' && $request->filled('bulan') && $request->filled('tahun')) {
             $bulan = (int)$request->query('bulan');
             $tahun = (int)$request->query('tahun');
@@ -117,6 +127,8 @@ class LaporanController extends Controller
             'tgl_akhir' => $tgl_akhir,
             'periode_label' => $periode_label,
             'tanggal' => $request->query('tanggal', Carbon::today('Asia/Makassar')->format('Y-m-d')),
+            'minggu' => $request->query('minggu', Carbon::now('Asia/Makassar')->weekOfYear),
+            'tahun_mingguan' => $request->query('tahun_mingguan', Carbon::now('Asia/Makassar')->format('Y')),
             'bulan' => $request->query('bulan', Carbon::now('Asia/Makassar')->format('n')),
             'tahun' => $request->query('tahun', Carbon::now('Asia/Makassar')->format('Y')),
             'tgl_awal_raw' => $request->query('tgl_awal', ''),

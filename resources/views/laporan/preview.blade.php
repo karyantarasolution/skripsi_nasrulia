@@ -169,6 +169,7 @@
                         <select name="filter_type" id="filter_type" class="form-select rounded-3 border shadow-xs" onchange="toggleFilterInputs()">
                             <option value="semua" {{ $filter['filter_type'] == 'semua' ? 'selected' : '' }}>Semua Data (All Time)</option>
                             <option value="harian" {{ $filter['filter_type'] == 'harian' ? 'selected' : '' }}>Harian (Tanggal Tertentu)</option>
+                            <option value="mingguan" {{ $filter['filter_type'] == 'mingguan' ? 'selected' : '' }}>Mingguan (Minggu ke-n)</option>
                             <option value="bulanan" {{ $filter['filter_type'] == 'bulanan' ? 'selected' : '' }}>Bulanan (Bulan & Tahun)</option>
                             <option value="tahunan" {{ $filter['filter_type'] == 'tahunan' ? 'selected' : '' }}>Tahunan (Tahun Tertentu)</option>
                             <option value="custom" {{ $filter['filter_type'] == 'custom' ? 'selected' : '' }}>Rentang Tanggal Custom</option>
@@ -179,6 +180,28 @@
                     <div class="col-lg-3 col-md-6 filter-input-group" id="input-harian" style="{{ $filter['filter_type'] == 'harian' ? '' : 'display: none;' }}">
                         <label class="form-label small fw-bold text-dark">Pilih Tanggal</label>
                         <input type="date" name="tanggal" class="form-control rounded-3 border" value="{{ $filter['tanggal'] }}">
+                    </div>
+
+                    <!-- Input Filter Mingguan -->
+                    <div class="col-lg-3 col-md-6 filter-input-group" id="input-mingguan" style="{{ $filter['filter_type'] == 'mingguan' ? '' : 'display: none;' }}">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-dark">Minggu ke-</label>
+                                <select name="minggu" class="form-select rounded-3 border">
+                                    @for($w = 1; $w <= 52; $w++)
+                                        <option value="{{ $w }}" {{ $filter['minggu'] == $w ? 'selected' : '' }}>Minggu {{ $w }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-dark">Tahun</label>
+                                <select name="tahun_mingguan" class="form-select rounded-3 border">
+                                    @for($y = date('Y'); $y >= 2020; $y--)
+                                        <option value="{{ $y }}" {{ $filter['tahun_mingguan'] == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Input Filter Bulanan -->
@@ -887,6 +910,9 @@
 
             if (mode === 'harian') {
                 const el = document.getElementById('input-harian');
+                if (el) el.style.display = 'block';
+            } else if (mode === 'mingguan') {
+                const el = document.getElementById('input-mingguan');
                 if (el) el.style.display = 'block';
             } else if (mode === 'bulanan') {
                 const el = document.getElementById('input-bulanan');
